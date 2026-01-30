@@ -7,7 +7,9 @@ export const BUILD_VERSION = "4.2.5 (Cloud Connected)";
  * GOOGLE_SHEET_WEB_APP_URL:
  * This is your specific deployment URL.
  */
-export const WEB_APP_URL: string = "https://script.google.com/macros/s/AKfycbyaLvIsyIrKtuet1zcf2lkTUkr0egt7SIPyESrWBxFgA1B_qW1ZyOWr1Rf9YKM_J4cyQw/exec";
+// Prefer the Vite environment variable `VITE_WEB_APP_URL` when provided by Vercel.
+// Set `VITE_WEB_APP_URL` in Vercel (or in `.env`) to point to your Apps Script web app.
+export const WEB_APP_URL: string = (import.meta.env && (import.meta.env.VITE_WEB_APP_URL as string)) || "https://script.google.com/macros/s/AKfycbzkU61DPOJESPo34607bq_wYuz7TOkqu-i3a4rP2kKpiyNM4DsHvu_p4EcGO7GGAabvcg/exec";
 
 export const DELIVERY_FEE_PER_ITEM = 100;
 export const OAT_RATE = 28;
