@@ -1,0 +1,5 @@
+{
+  "name": "Test",
+  "description": "A comprehensive order management system for NeedyNeeds, tracking customer orders, costs, and payment status.",
+  "requestFramePermissions": []
+}
