@@ -153,7 +153,7 @@ function doPost(e) {
             Setup Google Sheet
           </h3>
           <p className="text-sm text-slate-500 mb-4 leading-relaxed">
-            Create a new Google Sheet. From the menu, navigate to <span className="font-bold text-slate-800">Extensions > Apps Script</span>.
+            Create a new Google Sheet. From the menu, navigate to <span className="font-bold text-slate-800">Extensions {'>'} Apps Script</span>.
           </p>
           <ul className="space-y-2 text-xs text-slate-500">
             <li className="flex items-center gap-2">• Rename project to "{APP_NAME} Cloud Bridge"</li>
@@ -168,7 +168,7 @@ function doPost(e) {
             Deploy Web App
           </h3>
           <p className="text-sm text-slate-500 mb-4 leading-relaxed">
-            Click <span className="font-bold text-slate-800">Deploy > New Deployment</span>. Select <span className="font-bold text-slate-800">Web App</span>.
+            Click <span className="font-bold text-slate-800">Deploy {'>'} New Deployment</span>. Select <span className="font-bold text-slate-800">Web App</span>.
           </p>
           <ul className="space-y-2 text-xs text-slate-500">
             <li className="flex items-center gap-2">• <b>Execute as:</b> Me</li>
