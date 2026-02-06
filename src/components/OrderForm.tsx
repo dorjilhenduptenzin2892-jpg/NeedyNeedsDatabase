@@ -84,7 +84,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({ initialData, customerConte
       setAddress(customerContext.address || '');
       setPhoneNumber(customerContext.phoneNumber || '');
       setTransportMode(customerContext.transportMode || 'Keep at Shop');
-      setNote('');
+      setNote(customerContext.note || '');
       setAdvancePaid('');
       setIsFullPaymentReceived(false);
 
