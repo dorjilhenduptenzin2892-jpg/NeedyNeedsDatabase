@@ -227,14 +227,17 @@ export const OrderList: React.FC<OrderListProps> = ({ orders, batchCosts = [], o
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2">
                        <span className="text-sm text-slate-500 flex items-center gap-1.5"><Phone size={14} className="text-slate-400"/> {selectedGroupOrders[0].phoneNumber}</span>
                        <span className="text-sm text-slate-500 flex items-center gap-1.5"><MapPin size={14} className="text-slate-400"/> {selectedGroupOrders[0].address}</span>
-                       
-                       {customerNotes.length > 0 && (
-                          <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-amber-50 text-amber-800 rounded-md border border-amber-100 text-xs">
-                             <StickyNote size={14} className="text-amber-500" />
-                             <span className="font-bold">Note:</span>
-                             <span className="italic">{customerNotes.join(', ')}</span>
+                    </div>
+                    {customerNotes.length > 0 && (
+                       <div className="mt-3 w-full flex items-start gap-2 p-3 bg-amber-50 text-amber-900 rounded-lg border border-amber-200">
+                          <StickyNote size={18} className="text-amber-600 mt-0.5 flex-shrink-0" />
+                          <div>
+                             <p className="font-bold text-sm">Customer Note:</p>
+                             <p className="text-sm italic mt-1">{customerNotes.join(', ')}</p>
                           </div>
-                       )}
+                       </div>
+                    )}
+                    <div>
                     </div>
                  </div>
                  <button onClick={() => setSelectedCustomerKey(null)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-full">
@@ -263,12 +266,6 @@ export const OrderList: React.FC<OrderListProps> = ({ orders, batchCosts = [], o
                                         <div className="flex items-center gap-2 mt-1">
                                             <span className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full">{order.batchName}</span>
                                         </div>
-                                        {order.note && (
-                                            <div className="mt-2 inline-flex items-center gap-1 px-2 py-1 bg-amber-50 text-amber-800 rounded border border-amber-100 text-xs">
-                                                <StickyNote size={12} className="text-amber-500" />
-                                                <span className="italic">{order.note}</span>
-                                            </div>
-                                        )}
                                     </td>
                                     <td className="px-6 py-4 text-center">
                                         <div className="inline-flex items-center justify-center p-1.5 rounded bg-slate-100 text-slate-500">
