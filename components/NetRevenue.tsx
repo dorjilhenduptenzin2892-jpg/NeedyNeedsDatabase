@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Order, BatchCost } from '../types';
 import { TrendingUp, Download, Save, CheckCircle } from 'lucide-react';
-import { saveSummaryEntry, SummaryEntry } from '../services/storage';
+import { upsertSummaryEntry, SummaryEntry } from '../services/storage';
 import { DELIVERY_FEE_PER_ITEM, OAT_RATE } from '../constants';
 
 interface NetRevenueProps {
@@ -148,7 +148,7 @@ export const NetRevenue: React.FC<NetRevenueProps> = ({ orders, batchCosts = [],
       savedAt: new Date().toISOString()
     };
     
-    await saveSummaryEntry(summaryData);
+    await upsertSummaryEntry(summaryData);
     setSaveMessage('✓ Summary saved to Google Sheets');
     setTimeout(() => setSaveMessage(null), 3000);
     

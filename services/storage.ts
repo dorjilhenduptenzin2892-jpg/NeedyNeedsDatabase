@@ -173,6 +173,41 @@ export const saveSummaryEntry = async (entry: SummaryEntry) => {
   }
 };
 
+export const upsertSummaryEntry = async (entry: SummaryEntry) => {
+  if (!isConfigured()) return;
+  try {
+    const row = [
+      entry.month,
+      entry.batches,
+      entry.totalSales,
+      entry.costPrice ?? '',
+      entry.deliveryFee ?? '',
+      entry.oatPayment ?? '',
+      entry.fixedExpense ?? '',
+      entry.netProfit ?? '',
+      entry.isBatchClosed ? 'TRUE' : 'FALSE',
+      entry.savedAt
+    ];
+
+    await fetch(WEB_APP_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: 'upsertSummary',
+        key: {
+          month: entry.month,
+          batches: entry.batches
+        },
+        data: row
+      })
+    });
+    console.log('Summary entry upserted:', entry);
+  } catch (err) {
+    console.error("Summary upsert interrupted:", err);
+  }
+};
+
 export const loadSummaryEntries = async (): Promise<SummaryEntry[]> => {
   if (!isConfigured()) return [];
   try {
