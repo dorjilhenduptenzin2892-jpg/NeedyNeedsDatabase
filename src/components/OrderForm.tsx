@@ -169,8 +169,6 @@ export const OrderForm: React.FC<OrderFormProps> = ({ initialData, customerConte
       isFullPaymentReceived
     };
 
-    console.log('Submitting order with note:', commonData.note);
-
     const ordersToCreate: OrderFormData[] = items.map((item, index) => {
       const base = item.basePrice === '' ? 0 : item.basePrice;
       const sellingPrice = base + FIXED_CHARGE;

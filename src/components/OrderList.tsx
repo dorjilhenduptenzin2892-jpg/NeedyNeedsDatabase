@@ -68,8 +68,6 @@ export const OrderList: React.FC<OrderListProps> = ({ orders, batchCosts = [], o
     const notes = selectedGroupOrders
       .map(o => o.note?.trim())
       .filter((note): note is string => !!note);
-    console.log('Selected orders:', selectedGroupOrders);
-    console.log('Customer notes found:', Array.from(new Set(notes)));
     return Array.from(new Set(notes));
   }, [selectedGroupOrders]);
 
