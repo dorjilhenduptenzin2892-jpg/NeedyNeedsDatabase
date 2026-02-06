@@ -179,7 +179,7 @@ export const loadDataFromSheets = async () => {
   try {
     const ordersResponse = await window.gapi.client.sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: 'Orders!A2:N', 
+      range: 'Orders!A2:Z999', // Extended range to ensure all columns including notes are captured
     });
 
     const rows = ordersResponse.result.values || [];
