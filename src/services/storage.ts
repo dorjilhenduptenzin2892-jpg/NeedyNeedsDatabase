@@ -130,6 +130,8 @@ const orderToRow = (o: Order): any[] => [
 const rowToOrder = (row: any[]): Order | null => {
   if (!row || row.length === 0 || !row[0]) return null;
   
+  const noteValue = row[13] && String(row[13]).trim() ? String(row[13]).trim() : undefined;
+  
   return {
     id: String(row[0]).trim(), // STRICT STRING CONVERSION + TRIM to avoid comparison failures
     groupId: row[1] || undefined,
@@ -144,7 +146,7 @@ const rowToOrder = (row: any[]): Order | null => {
     advancePaid: Number(row[10]) || 0,
     transportMode: (row[11] as any) || 'Keep at Shop',
     isFullPaymentReceived: row[12] === 'TRUE' || row[12] === true,
-    note: row[13] && String(row[13]).trim() ? String(row[13]).trim() : undefined
+    note: noteValue
   };
 };
 
@@ -182,6 +184,8 @@ export const loadDataFromSheets = async () => {
 
     const rows = ordersResponse.result.values || [];
     const orders = rows.map(rowToOrder).filter((o: Order | null) => o !== null) as Order[];
+    console.log('Loaded orders from sheet:', orders.map(o => ({ id: o.id, customerName: o.customerName, note: o.note })));
+
 
     let batchCosts: BatchCost[] = [];
     try {
