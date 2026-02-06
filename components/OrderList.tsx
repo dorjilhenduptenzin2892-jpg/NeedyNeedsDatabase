@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { Order, TransportMode, BatchCost } from '../types';
-import { Search, MapPin, Phone, Edit2, Package, Bus, Truck, Mail, Home, X, ArrowRight, Trash2, Edit3, Plus } from 'lucide-react';
+import { Search, MapPin, Phone, Edit2, Package, Bus, Truck, Mail, Home, X, ArrowRight, Trash2, Edit3, Plus, StickyNote } from 'lucide-react';
 
 interface OrderListProps {
   orders: Order[];
@@ -59,6 +59,15 @@ export const OrderList: React.FC<OrderListProps> = ({ orders, batchCosts = [], o
     if (!group || group.length === 0) return null;
     return [...group].sort((a, b) => b.createdAt - a.createdAt);
   }, [groupedOrdersMap, selectedCustomerKey]);
+
+  // Aggregate unique notes for the selected customer
+  const customerNotes = useMemo(() => {
+    if (!selectedGroupOrders) return [];
+    const notes = selectedGroupOrders
+      .map(o => o.note?.trim())
+      .filter((note): note is string => !!note);
+    return Array.from(new Set(notes));
+  }, [selectedGroupOrders]);
 
   const customerTotals = useMemo(() => {
     if (!selectedGroupOrders) return null;
@@ -173,12 +182,21 @@ export const OrderList: React.FC<OrderListProps> = ({ orders, batchCosts = [], o
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
            <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
               <div className="bg-slate-50/50 px-6 py-5 border-b border-slate-100 flex justify-between items-center">
-                 <div>
+                 <div className="flex-1">
                     <h2 className="font-bold text-xl text-slate-900 font-serif">{selectedGroupOrders[0].customerName}</h2>
                     <div className="flex items-center gap-4 mt-1 text-xs text-slate-500 font-medium">
                        <span className="flex items-center gap-1"><Phone size={12} /> {selectedGroupOrders[0].phoneNumber}</span>
                        <span className="flex items-center gap-1"><MapPin size={12} /> {selectedGroupOrders[0].address}</span>
                     </div>
+                    {customerNotes.length > 0 && (
+                       <div className="mt-3 w-full flex items-start gap-2 p-3 bg-amber-50 text-amber-900 rounded-lg border border-amber-200">
+                          <StickyNote size={18} className="text-amber-600 mt-0.5 flex-shrink-0" />
+                          <div>
+                             <p className="font-bold text-sm">Customer Note:</p>
+                             <p className="text-sm italic mt-1">{customerNotes.join(', ')}</p>
+                          </div>
+                       </div>
+                    )}
                  </div>
                  <button onClick={() => setSelectedCustomerKey(null)} className="p-2 text-slate-400 hover:text-slate-900 rounded-lg transition-colors">
                    <X size={20} />
