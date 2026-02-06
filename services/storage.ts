@@ -126,3 +126,83 @@ export const syncBatchCostsToSheet = async (costs: BatchCost[]) => {
     console.error("Costs sync interrupted:", err);
   }
 };
+
+// --- SUMMARY SHEET FUNCTIONS ---
+
+export interface SummaryEntry {
+  month: string; // YYYY-MM format
+  batches: string;
+  totalSales: number;
+  costPrice: number | null;
+  deliveryFee: number | null;
+  oatPayment: number | null;
+  fixedExpense: number;
+  netProfit: number;
+  isBatchClosed: boolean;
+  savedAt: string;
+}
+
+export const saveSummaryEntry = async (entry: SummaryEntry) => {
+  if (!isConfigured()) return;
+  try {
+    const row = [
+      entry.month,
+      entry.batches,
+      entry.totalSales,
+      entry.costPrice || '',
+      entry.deliveryFee || '',
+      entry.oatPayment || '',
+      entry.fixedExpense,
+      entry.netProfit,
+      entry.isBatchClosed ? 'TRUE' : 'FALSE',
+      entry.savedAt
+    ];
+
+    await fetch(WEB_APP_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: 'saveSummary',
+        data: row
+      })
+    });
+    console.log('Summary entry saved:', entry);
+  } catch (err) {
+    console.error("Summary save interrupted:", err);
+  }
+};
+
+export const loadSummaryEntries = async (): Promise<SummaryEntry[]> => {
+  if (!isConfigured()) return [];
+  try {
+    const url = `${WEB_APP_URL}?action=loadSummary&t=${Date.now()}`;
+    const response = await fetch(url, {
+      method: 'GET',
+      mode: 'cors',
+      redirect: 'follow'
+    });
+    
+    if (!response.ok) {
+      throw new Error("Failed to load summary data");
+    }
+    
+    const result = await response.json();
+    const entries: SummaryEntry[] = (result.summaries || []).map((row: any[]) => ({
+      month: String(row[0] || ''),
+      batches: String(row[1] || ''),
+      totalSales: Number(row[2] || 0),
+      costPrice: row[3] && row[3] !== '' ? Number(row[3]) : null,
+      deliveryFee: row[4] && row[4] !== '' ? Number(row[4]) : null,
+      oatPayment: row[5] && row[5] !== '' ? Number(row[5]) : null,
+      fixedExpense: Number(row[6] || 0),
+      netProfit: Number(row[7] || 0),
+      isBatchClosed: String(row[8] || '').toUpperCase() === 'TRUE',
+      savedAt: String(row[9] || new Date().toISOString())
+    }));
+    return entries;
+  } catch (error: any) {
+    console.error("Error loading summary entries:", error);
+    return [];
+  }
+};

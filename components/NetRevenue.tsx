@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Order, BatchCost } from '../types';
-import { TrendingUp, Download, Save } from 'lucide-react';
+import { TrendingUp, Download, Save, CheckCircle } from 'lucide-react';
+import { saveSummaryEntry, SummaryEntry } from '../services/storage';
 
 interface NetRevenueProps {
   orders: Order[];
@@ -17,7 +18,7 @@ export const NetRevenue: React.FC<NetRevenueProps> = ({ orders, batchCosts = [],
   const [costPrice, setCostPrice] = useState<number | ''>('');
   const [deliveryFee, setDeliveryFee] = useState<number | ''>('');
   const [oatPayment, setOatPayment] = useState<number | ''>('');
-  const [isBatchClosed, setIsBatchClosed] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
   const FIXED_EXPENSE = 30000;
 
@@ -81,20 +82,24 @@ export const NetRevenue: React.FC<NetRevenueProps> = ({ orders, batchCosts = [],
     return { sales, cost, delivery, oat, totalDeductions, netProfit };
   }, [monthlyStats, costPrice, deliveryFee, oatPayment, isBatchClosed]);
 
-  const handleSaveData = () => {
-    const summaryData = {
-      year: selectedYear,
-      month: selectedMonth,
-      batches: batchesForMonth,
+  const handleSaveData = async () => {
+    const monthYearStr = `${selectedYear}-${selectedMonth}`;
+    const summaryData: SummaryEntry = {
+      month: monthYearStr,
+      batches: batchesForMonth.join(', '),
       totalSales: profitCalculation.sales,
-      costPrice: isBatchClosed ? costPrice : null,
-      deliveryFee: isBatchClosed ? deliveryFee : null,
-      oatPayment: isBatchClosed ? oatPayment : null,
+      costPrice: isBatchClosed && costPrice !== '' ? Number(costPrice) : null,
+      deliveryFee: isBatchClosed && deliveryFee !== '' ? Number(deliveryFee) : null,
+      oatPayment: isBatchClosed && oatPayment !== '' ? Number(oatPayment) : null,
       fixedExpense: FIXED_EXPENSE,
       netProfit: profitCalculation.netProfit,
       isBatchClosed,
       savedAt: new Date().toISOString()
     };
+    
+    await saveSummaryEntry(summaryData);
+    setSaveMessage('✓ Summary saved to Google Sheets');
+    setTimeout(() => setSaveMessage(null), 3000);
     
     if (onUpdateSummary) {
       onUpdateSummary(summaryData);
@@ -293,6 +298,12 @@ export const NetRevenue: React.FC<NetRevenueProps> = ({ orders, batchCosts = [],
 
       {/* Save Button */}
       <div className="flex gap-4">
+        {saveMessage && (
+          <div className="absolute top-6 left-1/2 -translate-x-1/2 px-4 py-2 bg-emerald-50 text-emerald-800 rounded-lg border border-emerald-200 font-medium flex items-center gap-2 animate-in fade-in slide-in-from-top">
+            <CheckCircle size={18} />
+            {saveMessage}
+          </div>
+        )}
         <button
           onClick={handleSaveData}
           className="flex-1 px-6 py-3 bg-rose-600 text-white font-medium rounded-xl hover:bg-rose-700 shadow-lg shadow-rose-200 transition-all flex justify-center items-center gap-2"
