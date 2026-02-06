@@ -237,8 +237,6 @@ export const OrderList: React.FC<OrderListProps> = ({ orders, batchCosts = [], o
                           </div>
                        </div>
                     )}
-                    <div>
-                    </div>
                  </div>
                  <button onClick={() => setSelectedCustomerKey(null)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-full">
                    <X size={20} />
