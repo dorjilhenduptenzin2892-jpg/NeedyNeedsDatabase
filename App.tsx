@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { LayoutDashboard, PlusCircle, List, Menu, X, PieChart, Loader2, RefreshCw, AlertTriangle, CloudOff, Cloud, ShieldCheck, Lock } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, List, Menu, X, PieChart, Loader2, RefreshCw, AlertTriangle, CloudOff, Cloud, ShieldCheck, Lock, TrendingUp } from 'lucide-react';
 import { Order, OrderFormData, BatchCost } from './types';
 import { APP_VIEWS, AppView, APP_NAME, WEB_APP_URL, BUILD_VERSION } from './constants';
 import { 
@@ -12,6 +12,7 @@ import { Dashboard } from './components/Dashboard';
 import { OrderForm } from './components/OrderForm';
 import { OrderList } from './components/OrderList';
 import { BatchAnalytics } from './components/BatchAnalytics';
+import { NetRevenue } from './components/NetRevenue';
 import { Admin } from './components/Admin';
 
 const ADMIN_PASSWORD = "Ghost006*";
@@ -232,6 +233,7 @@ export default function App() {
           <NavItem view={APP_VIEWS.NEW_ORDER} icon={PlusCircle} label="New Order" />
           <NavItem view={APP_VIEWS.ORDER_LIST} icon={List} label="All Orders" />
           <NavItem view={APP_VIEWS.BATCH_ANALYTICS} icon={PieChart} label="Financial Reports" />
+          <NavItem view={APP_VIEWS.NET_REVENUE} icon={TrendingUp} label="Net Revenue" />
           <div className="pt-4 border-t border-slate-200/40 mt-4">
              <NavItem view="admin" icon={ShieldCheck} label="System Admin" isAdmin />
           </div>
@@ -276,6 +278,7 @@ export default function App() {
                 {currentView === APP_VIEWS.NEW_ORDER && (editingOrder ? 'Modify Entry' : 'Create Transaction')}
                 {currentView === APP_VIEWS.ORDER_LIST && 'Inventory Database'}
                 {currentView === APP_VIEWS.BATCH_ANALYTICS && 'Performance Analytics'}
+                {currentView === APP_VIEWS.NET_REVENUE && 'Net Revenue Analysis'}
                 {currentView === 'admin' && 'Cloud Infrastructure'}
               </h1>
           </div>
@@ -297,6 +300,7 @@ export default function App() {
           }} />}
           {currentView === APP_VIEWS.ORDER_LIST && <OrderList orders={orders} batchCosts={batchCosts} onDelete={handleDeleteOrder} onEdit={(o) => { setEditingOrder(o); setCurrentView(APP_VIEWS.NEW_ORDER); }} onAddMore={(o) => { setCustomerContext(o); setCurrentView(APP_VIEWS.NEW_ORDER); }} onEditBatchCost={(batchName) => { setBatchToEditInAnalytics(batchName); setCurrentView(APP_VIEWS.BATCH_ANALYTICS); }} onUpdateOrders={handleBulkUpdateOrders} />}
           {currentView === APP_VIEWS.BATCH_ANALYTICS && <BatchAnalytics orders={orders} batchCosts={batchCosts} onUpdateBatchCost={handleUpdateBatchCost} initialEditBatch={batchToEditInAnalytics} />}
+          {currentView === APP_VIEWS.NET_REVENUE && <NetRevenue orders={orders} batchCosts={batchCosts} />}
           {currentView === 'admin' && <Admin />}
         </div>
       </main>

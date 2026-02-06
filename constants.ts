@@ -24,7 +24,8 @@ export const APP_VIEWS = {
   DASHBOARD: 'dashboard',
   NEW_ORDER: 'new_order',
   ORDER_LIST: 'order_list',
-  BATCH_ANALYTICS: 'batch_analytics'
+  BATCH_ANALYTICS: 'batch_analytics',
+  NET_REVENUE: 'net_revenue'
 } as const;
 
 export type AppView = typeof APP_VIEWS[keyof typeof APP_VIEWS];
