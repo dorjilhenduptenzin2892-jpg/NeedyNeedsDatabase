@@ -183,8 +183,10 @@ export const loadDataFromSheets = async () => {
     });
 
     const rows = ordersResponse.result.values || [];
+    console.log('Raw rows from Google Sheets:', rows.slice(0, 3)); // First 3 rows
+    console.log('First row length:', rows[0]?.length);
     const orders = rows.map(rowToOrder).filter((o: Order | null) => o !== null) as Order[];
-    console.log('Loaded orders from sheet:', orders.map(o => ({ id: o.id, customerName: o.customerName, note: o.note })));
+    console.log('Loaded orders from sheet:', orders.slice(0, 3).map(o => ({ id: o.id, customerName: o.customerName, note: o.note })));
 
 
     let batchCosts: BatchCost[] = [];
