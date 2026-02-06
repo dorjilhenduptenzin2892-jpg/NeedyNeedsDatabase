@@ -263,6 +263,12 @@ export const OrderList: React.FC<OrderListProps> = ({ orders, batchCosts = [], o
                                         <div className="flex items-center gap-2 mt-1">
                                             <span className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full">{order.batchName}</span>
                                         </div>
+                                        {order.note && (
+                                            <div className="mt-2 inline-flex items-center gap-1 px-2 py-1 bg-amber-50 text-amber-800 rounded border border-amber-100 text-xs">
+                                                <StickyNote size={12} className="text-amber-500" />
+                                                <span className="italic">{order.note}</span>
+                                            </div>
+                                        )}
                                     </td>
                                     <td className="px-6 py-4 text-center">
                                         <div className="inline-flex items-center justify-center p-1.5 rounded bg-slate-100 text-slate-500">
