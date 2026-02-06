@@ -46,7 +46,7 @@ const rowToOrder = (row: any[]): Order | null => {
     advancePaid: Number(row[10] || 0),
     transportMode: (row[11] as any) || 'Keep at Shop',
     isFullPaymentReceived: parseBool(row[12]),
-    note: String(row[13] || '').trim()
+    note: row[13] && String(row[13]).trim() ? String(row[13]).trim() : undefined
   };
 };
 
