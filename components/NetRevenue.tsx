@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Order, BatchCost } from '../types';
 import { TrendingUp, Download, Save, CheckCircle } from 'lucide-react';
 import { saveSummaryEntry, SummaryEntry } from '../services/storage';
+import { DELIVERY_FEE_PER_ITEM, OAT_RATE } from '../constants';
 
 interface NetRevenueProps {
   orders: Order[];
@@ -15,9 +16,8 @@ export const NetRevenue: React.FC<NetRevenueProps> = ({ orders, batchCosts = [],
   
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
-  const [costPrice, setCostPrice] = useState<number | ''>('');
-  const [deliveryFee, setDeliveryFee] = useState<number | ''>('');
-  const [oatPayment, setOatPayment] = useState<number | ''>('');
+  const [startBatch, setStartBatch] = useState('');
+  const [endBatch, setEndBatch] = useState('');
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
   const FIXED_EXPENSE = 30000;
@@ -45,9 +45,33 @@ export const NetRevenue: React.FC<NetRevenueProps> = ({ orders, batchCosts = [],
     });
   }, [uniqueBatches, selectedYear, selectedMonth]);
 
+  const batchesForMonthSorted = useMemo(() => {
+    return [...batchesForMonth].sort();
+  }, [batchesForMonth]);
+
+  useEffect(() => {
+    if (batchesForMonthSorted.length > 0) {
+      setStartBatch(batchesForMonthSorted[0]);
+      setEndBatch(batchesForMonthSorted[batchesForMonthSorted.length - 1]);
+    } else {
+      setStartBatch('');
+      setEndBatch('');
+    }
+  }, [batchesForMonthSorted]);
+
+  const selectedBatches = useMemo(() => {
+    if (batchesForMonthSorted.length === 0) return [];
+    const startIndex = startBatch ? batchesForMonthSorted.indexOf(startBatch) : 0;
+    const endIndex = endBatch ? batchesForMonthSorted.indexOf(endBatch) : batchesForMonthSorted.length - 1;
+    if (startIndex === -1 || endIndex === -1) return batchesForMonthSorted;
+    const from = Math.min(startIndex, endIndex);
+    const to = Math.max(startIndex, endIndex);
+    return batchesForMonthSorted.slice(from, to + 1);
+  }, [batchesForMonthSorted, startBatch, endBatch]);
+
   // Calculate total sales for selected month
   const monthlyStats = useMemo(() => {
-    const monthBatches = batchesForMonth;
+    const monthBatches = selectedBatches;
     let totalSales = 0;
     let totalItems = 0;
     let totalAdvance = 0;
@@ -67,33 +91,60 @@ export const NetRevenue: React.FC<NetRevenueProps> = ({ orders, batchCosts = [],
     });
 
     return { totalSales, totalItems, totalAdvance, totalRemaining };
-  }, [orders, batchesForMonth]);
+  }, [orders, selectedBatches]);
+
+  const deductions = useMemo(() => {
+    const batchCostMap = new Map(batchCosts.map(c => [c.batchName, c]));
+    const allClosed = selectedBatches.length > 0 && selectedBatches.every(b => batchCostMap.has(b));
+
+    let totalCostPrice = 0;
+    let totalDelivery = 0;
+    let totalOat = 0;
+
+    selectedBatches.forEach(batchName => {
+      const costConfig = batchCostMap.get(batchName);
+      if (!costConfig) return;
+
+      const batchOrders = orders.filter(o => o.batchName === batchName);
+      const totalItems = batchOrders.reduce((acc, o) => acc + o.quantity, 0);
+      const finalDeliveryQty = costConfig.deliveryFeeQuantity !== undefined ? costConfig.deliveryFeeQuantity : totalItems;
+      const deliveryFee = finalDeliveryQty * DELIVERY_FEE_PER_ITEM;
+      const oatPayment = (costConfig.oatInputValue || 0) * OAT_RATE;
+      const costPrice = costConfig.totalCostPrice || 0;
+
+      totalDelivery += deliveryFee;
+      totalOat += oatPayment;
+      totalCostPrice += costPrice;
+    });
+
+    return { allClosed, totalCostPrice, totalDelivery, totalOat };
+  }, [batchCosts, selectedBatches, orders]);
 
   // Calculate net profit
   const profitCalculation = useMemo(() => {
     const sales = monthlyStats.totalSales;
-    const cost = isBatchClosed && costPrice !== '' ? Number(costPrice) : 0;
-    const delivery = isBatchClosed && deliveryFee !== '' ? Number(deliveryFee) : 0;
-    const oat = isBatchClosed && oatPayment !== '' ? Number(oatPayment) : 0;
+    const cost = deductions.allClosed ? deductions.totalCostPrice : 0;
+    const delivery = deductions.allClosed ? deductions.totalDelivery : 0;
+    const oat = deductions.allClosed ? deductions.totalOat : 0;
     
-    const totalDeductions = cost + delivery + oat + FIXED_EXPENSE;
-    const netProfit = sales - totalDeductions;
+    const totalDeductions = cost + delivery + oat + (deductions.allClosed ? FIXED_EXPENSE : 0);
+    const netProfit = deductions.allClosed ? sales - totalDeductions : null;
 
     return { sales, cost, delivery, oat, totalDeductions, netProfit };
-  }, [monthlyStats, costPrice, deliveryFee, oatPayment, isBatchClosed]);
+  }, [monthlyStats, deductions]);
 
   const handleSaveData = async () => {
     const monthYearStr = `${selectedYear}-${selectedMonth}`;
     const summaryData: SummaryEntry = {
       month: monthYearStr,
-      batches: batchesForMonth.join(', '),
+      batches: selectedBatches.join(', '),
       totalSales: profitCalculation.sales,
-      costPrice: isBatchClosed && costPrice !== '' ? Number(costPrice) : null,
-      deliveryFee: isBatchClosed && deliveryFee !== '' ? Number(deliveryFee) : null,
-      oatPayment: isBatchClosed && oatPayment !== '' ? Number(oatPayment) : null,
-      fixedExpense: FIXED_EXPENSE,
-      netProfit: profitCalculation.netProfit,
-      isBatchClosed,
+      costPrice: deductions.allClosed ? deductions.totalCostPrice : null,
+      deliveryFee: deductions.allClosed ? deductions.totalDelivery : null,
+      oatPayment: deductions.allClosed ? deductions.totalOat : null,
+      fixedExpense: deductions.allClosed ? FIXED_EXPENSE : null,
+      netProfit: deductions.allClosed ? profitCalculation.netProfit : null,
+      isBatchClosed: deductions.allClosed,
       savedAt: new Date().toISOString()
     };
     
@@ -106,7 +157,6 @@ export const NetRevenue: React.FC<NetRevenueProps> = ({ orders, batchCosts = [],
     }
   };
 
-  const inputClasses = "w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-rose-500 focus:ring-2 focus:ring-rose-100 outline-none transition-all bg-white text-slate-900 placeholder-slate-400";
   const selectClasses = "px-4 py-2 rounded-lg border border-slate-200 focus:border-rose-500 outline-none bg-white text-slate-900";
 
   return (
@@ -143,11 +193,32 @@ export const NetRevenue: React.FC<NetRevenueProps> = ({ orders, batchCosts = [],
           </div>
         </div>
 
-        {batchesForMonth.length > 0 && (
+        {batchesForMonthSorted.length > 0 && (
           <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
             <p className="text-sm text-blue-900">
-              <span className="font-bold">Batches for this month:</span> {batchesForMonth.join(', ')}
+              <span className="font-bold">Batches for this month:</span> {batchesForMonthSorted.join(', ')}
             </p>
+          </div>
+        )}
+
+        {batchesForMonthSorted.length > 0 && (
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">From Batch</label>
+              <select value={startBatch} onChange={(e) => setStartBatch(e.target.value)} className={selectClasses}>
+                {batchesForMonthSorted.map(batch => (
+                  <option key={batch} value={batch}>{batch}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">To Batch</label>
+              <select value={endBatch} onChange={(e) => setEndBatch(e.target.value)} className={selectClasses}>
+                {batchesForMonthSorted.map(batch => (
+                  <option key={batch} value={batch}>{batch}</option>
+                ))}
+              </select>
+            </div>
           </div>
         )}
       </div>
@@ -175,75 +246,35 @@ export const NetRevenue: React.FC<NetRevenueProps> = ({ orders, batchCosts = [],
         </div>
       </div>
 
-      {/* Batch Closed Status & Deductions */}
+      {/* Deductions (from Financial Reports) */}
       <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-        <div className="flex items-center gap-4 mb-6 pb-6 border-b border-slate-100">
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={isBatchClosed}
-              onChange={(e) => setIsBatchClosed(e.target.checked)}
-              className="w-5 h-5 text-rose-600 rounded focus:ring-rose-500"
-            />
-            <span className="font-semibold text-slate-900">Mark batch as closed</span>
-          </label>
-          {isBatchClosed && <span className="px-3 py-1 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full">CLOSED</span>}
-        </div>
-
-        {!isBatchClosed && (
+        {!deductions.allClosed && (
           <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg mb-4">
-            <p className="text-sm text-amber-900">⚠️ <span className="font-semibold">Deductions will be empty</span> until you mark this batch as closed</p>
+            <p className="text-sm text-amber-900">⚠️ <span className="font-semibold">Deductions are pending</span> until batch costs are entered in Financial Reports.</p>
           </div>
         )}
 
-        <h3 className="text-lg font-semibold text-slate-800 mb-4">Deductions</h3>
+        <h3 className="text-lg font-semibold text-slate-800 mb-4">Deductions (From Financial Reports)</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Cost Price (BTN)</label>
-            <div className="relative">
-              <span className="absolute left-3 top-2.5 text-slate-400">BTN</span>
-              <input
-                type="number"
-                min="0"
-                value={costPrice}
-                onChange={(e) => setCostPrice(e.target.value === '' ? '' : parseFloat(e.target.value))}
-                disabled={!isBatchClosed}
-                className={`${inputClasses} pl-12 ${!isBatchClosed ? 'bg-slate-50 opacity-50 cursor-not-allowed' : ''}`}
-                placeholder="0"
-              />
-            </div>
+          <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+            <p className="text-xs font-bold text-slate-500 uppercase">Cost Price</p>
+            <p className="text-xl font-bold text-slate-900 mt-2">
+              {deductions.allClosed ? `BTN ${deductions.totalCostPrice.toLocaleString()}` : '—'}
+            </p>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Delivery Fee (Ashim Pema) (BTN)</label>
-            <div className="relative">
-              <span className="absolute left-3 top-2.5 text-slate-400">BTN</span>
-              <input
-                type="number"
-                min="0"
-                value={deliveryFee}
-                onChange={(e) => setDeliveryFee(e.target.value === '' ? '' : parseFloat(e.target.value))}
-                disabled={!isBatchClosed}
-                className={`${inputClasses} pl-12 ${!isBatchClosed ? 'bg-slate-50 opacity-50 cursor-not-allowed' : ''}`}
-                placeholder="0"
-              />
-            </div>
+          <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+            <p className="text-xs font-bold text-slate-500 uppercase">Delivery Fee (Ashim Pema)</p>
+            <p className="text-xl font-bold text-slate-900 mt-2">
+              {deductions.allClosed ? `BTN ${deductions.totalDelivery.toLocaleString()}` : '—'}
+            </p>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Oat Payment (BTN)</label>
-            <div className="relative">
-              <span className="absolute left-3 top-2.5 text-slate-400">BTN</span>
-              <input
-                type="number"
-                min="0"
-                value={oatPayment}
-                onChange={(e) => setOatPayment(e.target.value === '' ? '' : parseFloat(e.target.value))}
-                disabled={!isBatchClosed}
-                className={`${inputClasses} pl-12 ${!isBatchClosed ? 'bg-slate-50 opacity-50 cursor-not-allowed' : ''}`}
-                placeholder="0"
-              />
-            </div>
+          <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+            <p className="text-xs font-bold text-slate-500 uppercase">Oat Payment</p>
+            <p className="text-xl font-bold text-slate-900 mt-2">
+              {deductions.allClosed ? `BTN ${deductions.totalOat.toLocaleString()}` : '—'}
+            </p>
           </div>
         </div>
 
@@ -264,7 +295,7 @@ export const NetRevenue: React.FC<NetRevenueProps> = ({ orders, batchCosts = [],
           </div>
           <div className="h-px bg-slate-700"></div>
           
-          {isBatchClosed && (
+          {deductions.allClosed && (
             <>
               <div className="flex justify-between items-center text-sm">
                 <span className="text-slate-300">Cost Price</span>
@@ -283,14 +314,16 @@ export const NetRevenue: React.FC<NetRevenueProps> = ({ orders, batchCosts = [],
           
           <div className="flex justify-between items-center text-sm">
             <span className="text-slate-300">Fixed Monthly Expense</span>
-            <span className="font-semibold text-rose-400">- BTN {FIXED_EXPENSE.toLocaleString()}</span>
+            <span className={`font-semibold ${deductions.allClosed ? 'text-rose-400' : 'text-slate-400'}`}>
+              {deductions.allClosed ? `- BTN ${FIXED_EXPENSE.toLocaleString()}` : '—'}
+            </span>
           </div>
           
           <div className="h-px bg-slate-700"></div>
           <div className="flex justify-between items-center text-lg pt-2">
             <span className="font-bold">Net Profit</span>
-            <span className={`text-2xl font-bold ${profitCalculation.netProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-              BTN {profitCalculation.netProfit.toLocaleString()}
+            <span className={`text-2xl font-bold ${profitCalculation.netProfit !== null && profitCalculation.netProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+              {profitCalculation.netProfit !== null ? `BTN ${profitCalculation.netProfit.toLocaleString()}` : '—'}
             </span>
           </div>
         </div>
@@ -306,7 +339,8 @@ export const NetRevenue: React.FC<NetRevenueProps> = ({ orders, batchCosts = [],
         )}
         <button
           onClick={handleSaveData}
-          className="flex-1 px-6 py-3 bg-rose-600 text-white font-medium rounded-xl hover:bg-rose-700 shadow-lg shadow-rose-200 transition-all flex justify-center items-center gap-2"
+          disabled={!deductions.allClosed || selectedBatches.length === 0}
+          className={`flex-1 px-6 py-3 font-medium rounded-xl shadow-lg transition-all flex justify-center items-center gap-2 ${!deductions.allClosed || selectedBatches.length === 0 ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none' : 'bg-rose-600 text-white hover:bg-rose-700 shadow-rose-200'}`}
         >
           <Save size={20} />
           Save to Summary Sheet

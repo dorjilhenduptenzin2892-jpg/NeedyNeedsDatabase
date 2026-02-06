@@ -136,8 +136,8 @@ export interface SummaryEntry {
   costPrice: number | null;
   deliveryFee: number | null;
   oatPayment: number | null;
-  fixedExpense: number;
-  netProfit: number;
+  fixedExpense: number | null;
+  netProfit: number | null;
   isBatchClosed: boolean;
   savedAt: string;
 }
@@ -149,11 +149,11 @@ export const saveSummaryEntry = async (entry: SummaryEntry) => {
       entry.month,
       entry.batches,
       entry.totalSales,
-      entry.costPrice || '',
-      entry.deliveryFee || '',
-      entry.oatPayment || '',
-      entry.fixedExpense,
-      entry.netProfit,
+      entry.costPrice ?? '',
+      entry.deliveryFee ?? '',
+      entry.oatPayment ?? '',
+      entry.fixedExpense ?? '',
+      entry.netProfit ?? '',
       entry.isBatchClosed ? 'TRUE' : 'FALSE',
       entry.savedAt
     ];
